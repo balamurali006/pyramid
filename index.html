@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hero – Scroll Animation</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --sand:   #c8a96e;
+      --gold:   #e8c97a;
+      --dark:   #0a0805;
+      --cream:  #f5ead8;
+    }
+
+    html { scroll-behavior: auto; }
+
+    body {
+      background: var(--dark);
+      color: var(--cream);
+      font-family: 'Georgia', serif;
+      overflow-x: hidden;
+    }
+
+    /* ── Sticky scroll stage ── */
+    #hero-scroll-stage {
+      height: 600vh; /* scroll distance = 5 × viewport */
+      position: relative;
+    }
+
+    #hero-sticky {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Canvas sits full-bleed behind everything */
+    #frame-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Gradient vignette */
+    #hero-sticky::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at center, transparent 30%, rgba(10,8,5,.65) 100%),
+        linear-gradient(to bottom, rgba(10,8,5,.3) 0%, transparent 25%, transparent 70%, rgba(10,8,5,.8) 100%);
+      pointer-events: none;
+    }
+
+    /* ── Hero text overlay ── */
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .hero-eyebrow {
+      font-family: 'Courier New', monospace;
+      font-size: clamp(.65rem, 1.2vw, .85rem);
+      letter-spacing: .35em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity .8s ease, transform .8s ease;
+    }
+
+    .hero-title {
+      font-size: clamp(2.8rem, 8vw, 7rem);
+      font-weight: 400;
+      line-height: 1.0;
+      letter-spacing: -.01em;
+      color: var(--cream);
+      margin: .35em 0 .25em;
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 1s ease .15s, transform 1s ease .15s;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero-subtitle {
+      font-family: 'Courier New', monospace;
+      font-size: clamp(.75rem, 1.4vw, 1rem);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--sand);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity .8s ease .3s, transform .8s ease .3s;
+    }
+
+    /* scroll indicator */
+    .scroll-hint {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .5rem;
+      opacity: 1;
+      transition: opacity .5s ease;
+    }
+
+    .scroll-hint span {
+      font-family: 'Courier New', monospace;
+      font-size: .6rem;
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      color: var(--sand);
+    }
+
+    .scroll-hint .arrow {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, var(--gold), transparent);
+      animation: dropLine 1.6s ease-in-out infinite;
+    }
+
+    @keyframes dropLine {
+      0%   { transform: scaleY(0); transform-origin: top; opacity: 1; }
+      50%  { transform: scaleY(1); transform-origin: top; opacity: 1; }
+      100% { transform: scaleY(1); transform-origin: bottom; opacity: 0; }
+    }
+
+    /* ── Section below hero ── */
+    #below-hero {
+      background: var(--dark);
+      padding: 10vh 6vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    #below-hero h2 {
+      font-size: clamp(1.8rem, 4vw, 3.5rem);
+      font-weight: 400;
+      color: var(--cream);
+      text-align: center;
+    }
+
+    #below-hero p {
+      max-width: 56ch;
+      text-align: center;
+      color: var(--sand);
+      font-size: 1.05rem;
+      line-height: 1.75;
+    }
+
+    /* progress bar */
+    #progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 2px;
+      width: 0%;
+      background: linear-gradient(to right, var(--gold), var(--sand));
+      z-index: 100;
+      transition: width .05s linear;
+    }
+
+    /* reveal on load */
+    body.ready .hero-eyebrow,
+    body.ready .hero-title,
+    body.ready .hero-subtitle {
+      opacity: 1;
+      transform: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="progress-bar"></div>
+
+  <section id="hero-scroll-stage">
+    <div id="hero-sticky">
+      <canvas id="frame-canvas"></canvas>
+
+      <div class="hero-content">
+        <p class="hero-eyebrow">An Epic Journey Awaits</p>
+        <h1 class="hero-title">Rise of the<br><em>Desert King</em></h1>
+        <p class="hero-subtitle">Scroll to explore the legend</p>
+      </div>
+
+      <div class="scroll-hint">
+        <span>Scroll</span>
+        <div class="arrow"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="below-hero">
+    <h2>The Story Begins</h2>
+    <p>
+      Across golden dunes and ancient ruins, a forgotten dynasty stirs once more.
+      Uncover the mysteries buried beneath the sand — frame by frame, step by step.
+    </p>
+  </section>
+
+  <script>
+    (() => {
+      const TOTAL_FRAMES = 240;
+      const FRAME_PATH   = (n) => {
+        const padded = String(n).padStart(3, '0');
+        return `frames/ezgif-frame-${padded}.jpg`;
+      };
+
+      const canvas  = document.getElementById('frame-canvas');
+      const ctx     = canvas.getContext('2d');
+      const stage   = document.getElementById('hero-scroll-stage');
+      const bar     = document.getElementById('progress-bar');
+      const hint    = document.querySelector('.scroll-hint');
+
+      // ── Resize canvas to fill viewport ──
+      function resizeCanvas() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+        if (images[currentFrame]?.complete) drawFrame(currentFrame);
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      // ── Draw a single frame ──
+      function drawFrame(index) {
+        const img = images[index];
+        if (!img || !img.complete || img.naturalWidth === 0) return;
+        const cw = canvas.width, ch = canvas.height;
+        const iw = img.naturalWidth, ih = img.naturalHeight;
+        const scale = Math.max(cw / iw, ch / ih);
+        const x = (cw - iw * scale) / 2;
+        const y = (ch - ih * scale) / 2;
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.drawImage(img, x, y, iw * scale, ih * scale);
+      }
+
+      // ── Preload all frames ──
+      const images = new Array(TOTAL_FRAMES + 1); // 1-indexed
+      let loadedCount = 0;
+      let currentFrame = 1;
+
+      function preloadAll() {
+        for (let i = 1; i <= TOTAL_FRAMES; i++) {
+          const img = new Image();
+          img.src = FRAME_PATH(i);
+          img.onload = () => {
+            loadedCount++;
+            if (i === 1) {
+              drawFrame(1);
+              document.body.classList.add('ready');
+            }
+            // Once all loaded, do a clean redraw
+            if (loadedCount === TOTAL_FRAMES) drawFrame(currentFrame);
+          };
+          images[i] = img;
+        }
+      }
+      preloadAll();
+
+      // ── Smooth interpolation via rAF ──
+      let targetFrame  = 1;
+      let displayFrame = 1;  // float for lerp
+      let rafId        = null;
+
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      function animate() {
+        displayFrame = lerp(displayFrame, targetFrame, 0.12);
+        const rounded = Math.round(displayFrame);
+
+        if (rounded !== currentFrame) {
+          currentFrame = rounded;
+          drawFrame(currentFrame);
+        }
+
+        // Keep looping only while not settled
+        if (Math.abs(displayFrame - targetFrame) > 0.01) {
+          rafId = requestAnimationFrame(animate);
+        } else {
+          displayFrame = targetFrame;
+          currentFrame = targetFrame;
+          drawFrame(currentFrame);
+          rafId = null;
+        }
+      }
+
+      // ── Scroll handler ──
+      function onScroll() {
+        const stageRect = stage.getBoundingClientRect();
+        const stageH    = stage.offsetHeight - window.innerHeight;
+        const scrolled  = -stageRect.top;
+        const progress  = Math.max(0, Math.min(1, scrolled / stageH));
+
+        // Progress bar
+        bar.style.width = (progress * 100) + '%';
+
+        // Hide scroll hint after slight scroll
+        hint.style.opacity = progress > 0.03 ? '0' : '1';
+
+        // Target frame (1–240)
+        targetFrame = Math.max(1, Math.min(TOTAL_FRAMES,
+          Math.round(progress * (TOTAL_FRAMES - 1)) + 1
+        ));
+
+        if (!rafId) rafId = requestAnimationFrame(animate);
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll(); // init
+    })();
+  </script>
+</body>
+</html>
